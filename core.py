@@ -13,6 +13,7 @@ lineup_urls = [match1, match2, match3]
 
 complete_player_names = []
 
+# Obtain list of players for database
 for page_url in lineup_urls:
     # Convert HTML to soup
     page = requests.get(page_url)
@@ -30,11 +31,11 @@ for page_url in lineup_urls:
     # Extract player names
     team1_players_html = soup.find_all(class_='namea')
     team1_players = [player_html.get_text().lower() for player_html in team1_players_html[1:]]
-    print(team1_players)
+    # print(team1_players)
 
     team2_players_html = soup.find_all(class_='nameb')
     team2_players = [player_html.get_text().lower() for player_html in team2_players_html[1:]]
-    print(team2_players)
+    # print(team2_players)
 
     t1_p_len = len(team1_players)
     t2_p_len = len(team2_players)
@@ -47,20 +48,75 @@ for page_url in lineup_urls:
 
     if t2_p_len == pos_len:
         for i in range(t2_p_len):
-            temp = [team2_players[i], team2_name, positions[i]]
+            temp = [team2_players[i], team2_name, int(positions[i])]
             complete_player_names.append(temp)
 
+# Construct dataframe from list of rows for database
 player_database = pd.DataFrame(data=complete_player_names, columns=['name', 'team', 'position'])
 print(player_database)
 
+# print(player_database.loc[player_database['team'] == 'wales'])
+# print(player_database[player_database.position == '4'])
 
-# Add to dictionary
+# ###################################################
+# Find player stats
+# ###################################################
+
+# Add columns for player stats
+stats_columns = [   'minutes played',
+                    'started as a sub',
+                    'not used',
+                    'points',
+                    'tries',
+                    'drop goals',
+                    'conversion scored',
+                    'penalties scored',
+                    'yellow card',
+                    'red and yellow card',
+                    'red card']
+
+stats_columns_len = len(stats_columns)
+db_size = len(player_database['name'])
+
+for column_name in stats_columns:
+    player_database[column_name] = pd.Series(['-']*db_size)
+
+for index, row in player_database.iterrows():
+    print(index, row['name'], sep=' ')
+    # Obtain player name
+    player = row['name']
+    name_string = player.replace(' ', '+')
+
+    # Go to appropriate web page
+    stats_index_url = 'http://rugby.statbunker.com/usual/search?action=Find&search={0}'.format(name_string)
+    stats_index_page = requests.get(stats_index_url)
+    stats_index_soup = BeautifulSoup(stats_index_page.content, 'html.parser')
 
 
+    try:
+        player_id_html = stats_index_soup.find('a', class_='linkGreen', href=True)
+        player_id_href = player_id_html['href']
+        player_id = player_id_href.split('=')[1]
+    except TypeError:
+        print('TypeError encountered, continuing', index, row['name'])
+    # print(player_id)
 
-#
-# scot_players = tree.xpath("//td[@class='namea'][text()]")
-#
-# #scot_players
-#
-# print(scot_players)
+    player_2016_stats_url = 'http://rugby.statbunker.com/players/SeasonMatches?player_id={0}&comps_type=-1&dates=2016'.format(player_id)
+    player_2016_page = requests.get(player_2016_stats_url)
+    player_2016_soup = BeautifulSoup(player_2016_page.content, 'html.parser')
+
+    stats_figures_html = player_2016_soup.select('b')
+    stats_figures = [cell.get_text() for cell in stats_figures_html[5:16]]
+
+    sf_len = len(stats_figures)
+
+    if sf_len == stats_columns_len:
+        for i in range(sf_len):
+            player_database.loc[player_database['name'] == player, stats_columns[i]] = stats_figures[i]
+
+# print(player_database)
+
+# Write player_database to excel document
+writer = pd.ExcelWriter('6_nations_output.xlsx')
+player_database.to_excel(writer, sheet_name='players')
+writer.save()
