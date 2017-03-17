@@ -6,9 +6,11 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 # Define URL's necessary to extract player's information
-match1 = 'http://www.rbs6nations.com/en/matchcentre/match_centre.php?section=lineups&fixid=204324'
-match2 = 'http://www.rbs6nations.com/en/matchcentre/match_centre.php?section=lineups&fixid=204325'
-match3 = 'http://www.rbs6nations.com/en/matchcentre/match_centre.php?section=lineups&fixid=204326'
+id1 = 204333
+lineup_url = 'http://www.rbs6nations.com/en/matchcentre/match_centre.php?section=lineups&fixid='
+match1 = lineup_url + str(id1)
+match2 = lineup_url + str(id1 + 1)
+match3 = lineup_url + str(id1 + 2)
 lineup_urls = [match1, match2, match3]
 
 complete_player_names = []
@@ -27,14 +29,15 @@ for page_url in lineup_urls:
     # Extract positions
     positions_html = soup.find_all(class_='pos')
     positions = [position_html.get_text() for position_html in positions_html]
+    # print(positions)
 
     # Extract player names
     team1_players_html = soup.find_all(class_='namea')
-    team1_players = [player_html.get_text().lower() for player_html in team1_players_html[1:]]
+    team1_players = [player_html.get_text().lower() for player_html in team1_players_html]
     # print(team1_players)
 
     team2_players_html = soup.find_all(class_='nameb')
-    team2_players = [player_html.get_text().lower() for player_html in team2_players_html[1:]]
+    team2_players = [player_html.get_text().lower() for player_html in team2_players_html]
     # print(team2_players)
 
     t1_p_len = len(team1_players)
@@ -92,7 +95,6 @@ for index, row in player_database.iterrows():
     stats_index_page = requests.get(stats_index_url)
     stats_index_soup = BeautifulSoup(stats_index_page.content, 'html.parser')
 
-
     try:
         player_id_html = stats_index_soup.find('a', class_='linkGreen', href=True)
         player_id_href = player_id_html['href']
@@ -117,6 +119,6 @@ for index, row in player_database.iterrows():
 # print(player_database)
 
 # Write player_database to excel document
-writer = pd.ExcelWriter('6_nations_output.xlsx')
+writer = pd.ExcelWriter('6_nations_round_2_output.xlsx')
 player_database.to_excel(writer, sheet_name='players')
 writer.save()
