@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 # Define URL's necessary to extract player's information
-id1 = 204333
+id1 = 204336
 lineup_url = 'http://www.rbs6nations.com/en/matchcentre/match_centre.php?section=lineups&fixid='
 match1 = lineup_url + str(id1)
 match2 = lineup_url + str(id1 + 1)
@@ -103,7 +103,7 @@ for index, row in player_database.iterrows():
         print('TypeError encountered, continuing', index, row['name'])
     # print(player_id)
 
-    player_2016_stats_url = 'http://rugby.statbunker.com/players/SeasonMatches?player_id={0}&comps_type=-1&dates=2016'.format(player_id)
+    player_2016_stats_url = 'http://rugby.statbunker.com/players/SeasonMatches?player_id={0}&comps_type=-1&dates=2017'.format(player_id)
     player_2016_page = requests.get(player_2016_stats_url)
     player_2016_soup = BeautifulSoup(player_2016_page.content, 'html.parser')
 
@@ -119,6 +119,6 @@ for index, row in player_database.iterrows():
 # print(player_database)
 
 # Write player_database to excel document
-writer = pd.ExcelWriter('6_nations_round_2_output.xlsx')
+writer = pd.ExcelWriter('6_nations_round_5_output_2017.xlsx')
 player_database.to_excel(writer, sheet_name='players')
 writer.save()
